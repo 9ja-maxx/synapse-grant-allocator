@@ -1,10 +1,17 @@
 # SynapseGrant: Autonomous DeSci Research Grant & Proposal Diversity Allocator
 
 [![GenLayer Studionet](https://img.shields.io/badge/Network-GenLayer%20Studionet-emerald.svg)](https://studio.genlayer.com)
+[![Deployed Contract](https://img.shields.io/badge/Contract-0x257d...9977-blue.svg)](https://explorer-studio.genlayer.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![DeSci Infrastructure](https://img.shields.io/badge/Track-Decentralized%20Science-purple.svg)](#)
 
 > **Autonomous AI-Consensus Protocol for Transparent, Diversity-Preserving Research Grant Allocation on GenLayer.**
+
+### 📍 Live Studionet Deployment
+- **Contract Address**: `0x257dF49DFADc9f1e88e2FD25FB7b2EF445299977`
+- **Network**: GenLayer Studionet (`chainId: 61999`)
+- **RPC Endpoint**: `https://studio.genlayer.com/api`
+
 
 ---
 

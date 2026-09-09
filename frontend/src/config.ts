@@ -31,7 +31,7 @@ export function validateContractAddress(address: unknown): { isValid: boolean; e
 }
 
 export function loadAppConfig(): AppConfig {
-  const rawAddress = (import.meta.env.VITE_CONTRACT_ADDRESS ?? '').trim();
+  const rawAddress = (import.meta.env.VITE_CONTRACT_ADDRESS ?? '0x257dF49DFADc9f1e88e2FD25FB7b2EF445299977').trim();
   const addressValidation = validateContractAddress(rawAddress);
 
   // Studionet defaults confirmed for GenLayer test environment
