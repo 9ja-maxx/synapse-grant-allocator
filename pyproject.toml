@@ -1,0 +1,14 @@
+[project]
+name = "synapse-grant-allocator"
+version = "0.1.0"
+description = "Autonomous AI DeSci Research Grant & Proposal Diversity Allocator on GenLayer"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "genlayer-test>=0.29.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "strict"
