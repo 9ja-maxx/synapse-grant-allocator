@@ -177,21 +177,7 @@ export class GenLayerContractClient {
   public async getState(programId: number): Promise<LifecycleState> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const raw = await this.readContract('get_program_state', [validId]);
-    const stateStr = String(raw || '');
-    const summary = decodeProgram({
-      program_id: validId,
-      organizer: '0x0000000000000000000000000000000000000000',
-      admission_authority: '0x0000000000000000000000000000000000000000',
-      proposal_url: 'https://example.com/p.txt',
-      proposal_digest: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      expected_manifest_digest: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      slot_count: 1,
-      registration_deadline: 0,
-      dispute_deadline: 0,
-      state: stateStr,
-      proposal_count: 0,
-    });
-    return summary.state;
+    return String(raw || '') as LifecycleState;
   }
 
   /**
@@ -225,7 +211,7 @@ export class GenLayerContractClient {
     const validChalDeadline = validateSafeInteger(disputeDeadline, 'dispute_deadline', 0);
 
     const receipt = await this.executeWrite(
-      'initiate_program',
+      'create_program',
       [
         proposalUrl.trim(),
         proposalDigest.trim().toLowerCase(),
@@ -321,7 +307,7 @@ export class GenLayerContractClient {
     options: WriteCallOptions,
   ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
-    const receipt = await this.executeWrite('abort_program', [validId], options);
+    const receipt = await this.executeWrite('cancel_program', [validId], options);
     return { txHash: receipt.hash, receipt };
   }
 

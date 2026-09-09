@@ -302,20 +302,20 @@ export function decodeProgram(data: unknown): ProgramSummary {
   }
 
   const programId = validateSafeInteger(data.program_id ?? data.id, 'program_id', 1);
-  const director = validateHexAddress(data.director, 'director');
+  const director = validateHexAddress(data.director ?? data.organizer, 'director');
   const admissionAuthority = validateHexAddress(data.admission_authority, 'admission_authority');
-  const proposalUrl = validateUrl(data.proposal_url, 'proposal_url');
-  const proposalDigest = validateSha256(data.proposal_digest, 'proposal_digest');
-  const expectedManifestDigest = validateSha256(data.expected_docket_digest, 'expected_docket_digest');
-  const computedManifestDigest = validateSha256(data.computed_docket_digest ?? '', 'computed_docket_digest', true);
-  const slotCount = validateSafeInteger(data.grant_count, 'grant_count', 1, 6);
-  const registrationDeadline = validateSafeInteger(data.submission_deadline, 'submission_deadline', 0);
-  const disputeDeadline = validateSafeInteger(data.dispute_deadline, 'dispute_deadline', 0);
-  const proposalCount = validateSafeInteger(data.proposal_count, 'proposal_count', 0, 12);
-  const revision = validateSafeInteger(data.revision ?? 0, 'revision', 0);
-  const acceptedChallengeCount = validateSafeInteger(data.accepted_dispute_count ?? 0, 'accepted_dispute_count', 0);
-  const pendingChallengeCount = validateSafeInteger(data.pending_dispute_count ?? 0, 'pending_dispute_count', 0);
-  const totalChallengeCount = validateSafeInteger(data.total_dispute_count ?? 0, 'total_dispute_count', 0);
+  const proposalUrl = validateUrl(data.proposal_url ?? data.rfp_url, 'proposal_url');
+  const proposalDigest = validateSha256(data.proposal_digest ?? data.rfp_digest, 'proposal_digest');
+  const expectedManifestDigest = validateSha256(data.expected_docket_digest ?? data.expected_manifest_digest, 'expected_docket_digest');
+  const computedManifestDigest = validateSha256(data.computed_docket_digest ?? data.computed_manifest_digest ?? '', 'computed_docket_digest', true);
+  const slotCount = validateSafeInteger(data.grant_count ?? data.slot_count, 'grant_count', 1, 6);
+  const registrationDeadline = validateSafeInteger(data.submission_deadline ?? data.registration_deadline, 'submission_deadline', 0);
+  const disputeDeadline = validateSafeInteger(data.dispute_deadline ?? data.challenge_deadline, 'dispute_deadline', 0);
+  const proposalCount = validateSafeInteger(data.proposal_count ?? data.comment_count, 'proposal_count', 0, 12);
+  const revision = validateSafeInteger(data.revision ?? data.epoch ?? 0, 'revision', 0);
+  const acceptedChallengeCount = validateSafeInteger(data.accepted_dispute_count ?? data.accepted_challenge_count ?? 0, 'accepted_dispute_count', 0);
+  const pendingChallengeCount = validateSafeInteger(data.pending_dispute_count ?? data.pending_challenge_count ?? 0, 'pending_dispute_count', 0);
+  const totalChallengeCount = validateSafeInteger(data.total_dispute_count ?? data.total_challenge_count ?? 0, 'total_dispute_count', 0);
 
   return {
     program_id: programId,
@@ -429,7 +429,7 @@ export function decodeChallenge(data: unknown): DisputeRecord {
     throw new Error('Malformed dispute record: expected JSON object');
   }
 
-  const disputeType = String(data.dispute_type || '');
+  const disputeType = String(data.dispute_type || data.challenge_type || '');
   if (!isChallengeType(disputeType)) {
     throw new Error(`Malformed dispute record: invalid dispute_type "${disputeType}"`);
   }
@@ -440,7 +440,7 @@ export function decodeChallenge(data: unknown): DisputeRecord {
   }
 
   const id = validateSafeInteger(data.id, 'dispute_id', 1);
-  const disputer = validateHexAddress(data.disputer, 'disputer');
+  const disputer = validateHexAddress(data.disputer ?? data.challenger, 'disputer');
 
   if (!Array.isArray(data.target_ids)) {
     throw new Error('Malformed dispute record: target_ids must be an array');
@@ -454,14 +454,14 @@ export function decodeChallenge(data: unknown): DisputeRecord {
 
   const targetIds = data.target_ids.map((tid, idx) => validateString(tid, `target_ids[${idx}]`, 1, 128));
   const resolutionReason = validateString(data.resolution_reason ?? '', 'resolution_reason', 0);
-  const resolvedAtRevision = validateSafeInteger(data.resolved_at_revision ?? 0, 'resolved_at_revision', 0);
+  const resolvedAtRevision = validateSafeInteger(data.resolved_at_revision ?? data.resolved_at_epoch ?? 0, 'resolved_at_revision', 0);
 
   return {
     id,
-    dispute_type: disputeType,
+    dispute_type: disputeType as ChallengeType,
     target_ids: targetIds,
     disputer,
-    status,
+    status: status as ChallengeStatus,
     resolution_reason: resolutionReason,
     resolved_at_revision: resolvedAtRevision,
   };
@@ -473,10 +473,10 @@ export function decodeAllocationWinner(data: unknown): AllocationWinner {
   }
 
   const rank = validateSafeInteger(data.rank ?? data.selection_rank, 'rank', 1, 6);
-  const externalId = validateString(data.proposal_id, 'proposal_id', 1, 128);
-  const domainId = validateSafeInteger(data.domain_id, 'domain_id', 1, 6);
-  const relevanceScore = validateSafeInteger(data.innovation_score, 'innovation_score', 1, 100);
-  const reasonCode = validateString(data.reason_code, 'reason_code', 1);
+  const externalId = validateString(data.proposal_id ?? data.external_id, 'proposal_id', 1, 128);
+  const domainId = validateSafeInteger(data.domain_id ?? data.cluster_id ?? 0, 'domain_id', 0, 6);
+  const relevanceScore = validateSafeInteger(data.innovation_score ?? data.relevance_score ?? 0, 'innovation_score', 0, 100);
+  const reasonCode = validateString(data.reason_code ?? '', 'reason_code', 0);
   const rationale = validateString(data.rationale ?? '', 'rationale', 0);
 
   return {
