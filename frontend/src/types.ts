@@ -80,34 +80,49 @@ export const UNSELECTED_REASONS: readonly UnselectedReasonCode[] = [
 // Exact Contract Data Structures
 export interface ProgramSummary {
   program_id: number;
+  hearing_id: number;
   director: HexAddress;
+  organizer: HexAddress;
   admission_authority: HexAddress;
   proposal_url: string;
   proposal_digest: string;
   expected_docket_digest: string;
+  expected_manifest_digest: string;
   computed_docket_digest: string;
+  computed_manifest_digest: string;
   grant_count: number;
+  slot_count: number;
   submission_deadline: number;
+  registration_deadline: number;
   dispute_deadline: number;
+  challenge_deadline: number;
   state: LifecycleState;
   proposal_count: number;
+  comment_count: number;
   revision: number;
   accepted_dispute_count: number;
+  accepted_challenge_count: number;
   pending_dispute_count: number;
+  pending_challenge_count: number;
   total_dispute_count: number;
+  total_challenge_count: number;
 }
 
 export interface ProposalRecord {
   index: number;
   proposal_id: string;
+  external_id: string;
   url: string;
   digest: string;
   registrar: HexAddress;
   eligible: boolean;
   exclusion_reason: string;
   domain_id: number;
+  cluster_id: number;
   domain_label: string;
+  cluster_label?: string;
   innovation_score: number;
+  relevance_score?: number;
   is_duplicate: boolean;
   duplicate_of_id: string;
   selected: boolean;
@@ -118,16 +133,20 @@ export interface ProposalRecord {
 
 export interface DomainRecord {
   domain_id: number;
+  cluster_id: number;
   label: string;
   summary: string;
   proposal_ids: string[];
+  comment_ids: string[];
 }
 
 export interface DisputeRecord {
   id: number;
   dispute_type: ChallengeType;
+  challenge_type?: ChallengeType;
   target_ids: string[];
   disputer: HexAddress;
+  challenger?: HexAddress;
   status: ChallengeStatus;
   resolution_reason: string;
   resolved_at_revision: number;
@@ -136,6 +155,7 @@ export interface DisputeRecord {
 export interface AllocationWinner {
   rank: number;
   proposal_id: string;
+  external_id: string;
   domain_id: number;
   innovation_score: number;
   reason_code: string;
@@ -299,21 +319,32 @@ export function decodeProgram(data: unknown): ProgramSummary {
 
   return {
     program_id: programId,
+    hearing_id: programId,
     director,
+    organizer: director,
     admission_authority: admissionAuthority,
     proposal_url: proposalUrl,
     proposal_digest: proposalDigest,
     expected_docket_digest: expectedManifestDigest,
+    expected_manifest_digest: expectedManifestDigest,
     computed_docket_digest: computedManifestDigest,
+    computed_manifest_digest: computedManifestDigest,
     grant_count: slotCount,
+    slot_count: slotCount,
     submission_deadline: registrationDeadline,
+    registration_deadline: registrationDeadline,
     dispute_deadline: disputeDeadline,
+    challenge_deadline: disputeDeadline,
     state: stateStr,
     proposal_count: proposalCount,
+    comment_count: proposalCount,
     revision,
     accepted_dispute_count: acceptedChallengeCount,
+    accepted_challenge_count: acceptedChallengeCount,
     pending_dispute_count: pendingChallengeCount,
+    pending_challenge_count: pendingChallengeCount,
     total_dispute_count: totalChallengeCount,
+    total_challenge_count: totalChallengeCount,
   };
 }
 
@@ -349,14 +380,17 @@ export function decodeComment(data: unknown): ProposalRecord {
   return {
     index,
     proposal_id: externalId,
+    external_id: externalId,
     url,
     digest,
     registrar,
     eligible,
     exclusion_reason: exclusionReason,
     domain_id: domainId,
+    cluster_id: domainId,
     domain_label: domainLabel,
     innovation_score: relevanceScore,
+    relevance_score: relevanceScore,
     is_duplicate: isDuplicate,
     duplicate_of_id: duplicateOfId,
     selected,
@@ -382,9 +416,11 @@ export function decodeCluster(data: unknown): DomainRecord {
 
   return {
     domain_id: domainId,
+    cluster_id: domainId,
     label,
     summary,
     proposal_ids: proposalIds,
+    comment_ids: proposalIds,
   };
 }
 
@@ -446,9 +482,17 @@ export function decodeAllocationWinner(data: unknown): AllocationWinner {
   return {
     rank,
     proposal_id: externalId,
+    external_id: externalId,
     domain_id: domainId,
     innovation_score: relevanceScore,
     reason_code: reasonCode,
     rationale,
   };
 }
+
+export type HearingSummary = ProgramSummary;
+export type CommentRecord = ProposalRecord;
+export type ClusterRecord = DomainRecord;
+export type ChallengeRecord = DisputeRecord;
+export const decodeHearing = decodeProgram;
+

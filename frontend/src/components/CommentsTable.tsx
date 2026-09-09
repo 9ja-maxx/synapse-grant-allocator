@@ -70,7 +70,7 @@ export const CommentsTable: React.FC<CommentsTableProps> = ({ comments }) => {
                   <td>
                     {c.cluster_id > 0 ? (
                       <span className="badge">
-                        C{c.cluster_id}: {c.cluster_label || `Cluster ${c.cluster_id}`}
+                        C{c.cluster_id}: {c.domain_label || c.cluster_label || '' || `Cluster ${c.cluster_id}`}
                       </span>
                     ) : (
                       <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-ink-2)' }}>
@@ -79,7 +79,7 @@ export const CommentsTable: React.FC<CommentsTableProps> = ({ comments }) => {
                     )}
                   </td>
                   <td className="font-mono">
-                    {c.relevance_score > 0 ? `${c.relevance_score}/100` : '—'}
+                    {(c.innovation_score ?? c.relevance_score ?? 0) > 0 ? `${(c.innovation_score ?? c.relevance_score ?? 0)}/100` : '—'}
                   </td>
                   <td>
                     {c.selected && (

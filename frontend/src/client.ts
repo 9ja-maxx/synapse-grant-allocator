@@ -64,6 +64,10 @@ export class GenLayerContractClient {
     return validateSafeInteger(raw, 'program_count', 0);
   }
 
+  public async getHearingCount(): Promise<number> {
+    return this.getProgramCount();
+  }
+
   /**
    * 2. Get program summary by ID.
    */
@@ -71,6 +75,10 @@ export class GenLayerContractClient {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const raw = await this.readContract('get_program', [validId]);
     return decodeProgram(this.parseJsonResult(raw, 'get_program'));
+  }
+
+  public async getHearing(programId: number): Promise<ProgramSummary> {
+    return this.getProgram(programId);
   }
 
   /**
@@ -402,14 +410,14 @@ export class GenLayerContractClient {
   }
 
   /**
-   * 8. Finalize program (CHALLENGE -> FINAL).
+   * 8. Finalize program after dispute deadline expires.
    */
   public async finalizeProgram(
     programId: number,
     options: WriteCallOptions,
   ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
-    const receipt = await this.executeWrite('seal_program', [validId], options);
+    const receipt = await this.executeWrite('finalize_program', [validId], options);
     return {
       txHash: receipt.hash,
       receipt,
@@ -419,6 +427,41 @@ export class GenLayerContractClient {
   // ==========================================
   // Internal Helpers & Execution Lifecycle
   // ==========================================
+
+  
+  public async createHearing(
+    proposalUrl: string,
+    proposalDigest: string,
+    expectedManifestDigest: string,
+    slotCount: number,
+    registrationDeadline: number,
+    challengeDeadline: number,
+    options: WriteCallOptions,
+  ): Promise<{ hearingId: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    const res = await this.createProgram(proposalUrl, proposalDigest, expectedManifestDigest, slotCount, registrationDeadline, challengeDeadline, options);
+    return { hearingId: res.programId, txHash: res.txHash, receipt: res.receipt };
+  }
+
+  public async cancelHearing(
+    hearingId: number,
+    options: WriteCallOptions,
+  ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.cancelProgram(hearingId, options);
+  }
+
+  public async clusterComments(
+    hearingId: number,
+    options: WriteCallOptions,
+  ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.domainComments(hearingId, options);
+  }
+
+  public async finalizeHearing(
+    hearingId: number,
+    options: WriteCallOptions,
+  ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.finalizeProgram(hearingId, options);
+  }
 
   private async readContract(functionName: string, args: unknown[]): Promise<unknown> {
     const client = createClient({
@@ -520,3 +563,13 @@ export class GenLayerContractClient {
     }
   }
 }
+
+export const HearingCreatedReconciliationError = ProgramCreatedReconciliationError;
+
+// Add backward-compatible alias methods to GenLayerContractClient prototype
+(GenLayerContractClient.prototype as any).getHearingCount = GenLayerContractClient.prototype.getProgramCount;
+(GenLayerContractClient.prototype as any).getHearing = GenLayerContractClient.prototype.getProgram;
+(GenLayerContractClient.prototype as any).createHearing = GenLayerContractClient.prototype.createProgram;
+(GenLayerContractClient.prototype as any).cancelHearing = GenLayerContractClient.prototype.cancelProgram;
+(GenLayerContractClient.prototype as any).clusterComments = GenLayerContractClient.prototype.domainComments;
+(GenLayerContractClient.prototype as any).finalizeHearing = GenLayerContractClient.prototype.finalizeProgram;
