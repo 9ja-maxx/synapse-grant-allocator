@@ -301,7 +301,7 @@ export function decodeProgram(data: unknown): ProgramSummary {
     throw new Error(`Malformed program summary: invalid state "${stateStr}"`);
   }
 
-  const programId = validateSafeInteger(data.program_id ?? data.id, 'program_id', 1);
+  const programId = validateSafeInteger(data.program_id ?? data.id ?? data.hearing_id, 'program_id', 1);
   const director = validateHexAddress(data.director ?? data.organizer, 'director');
   const admissionAuthority = validateHexAddress(data.admission_authority, 'admission_authority');
   const proposalUrl = validateUrl(data.proposal_url ?? data.rfp_url, 'proposal_url');
@@ -354,7 +354,7 @@ export function decodeComment(data: unknown): ProposalRecord {
   }
 
   const index = validateSafeInteger(data.index, 'index', 0);
-  const externalId = validateString(data.proposal_id, 'proposal_id', 1, 128);
+  const externalId = validateString(data.proposal_id ?? data.external_id, 'proposal_id', 1, 128);
   for (let i = 0; i < externalId.length; i++) {
     const code = externalId.charCodeAt(i);
     const ch = externalId[i];
@@ -367,9 +367,9 @@ export function decodeComment(data: unknown): ProposalRecord {
   const registrar = validateHexAddress(data.registrar, 'registrar');
   const eligible = validateBoolean(data.eligible ?? true, 'eligible');
   const exclusionReason = validateString(data.exclusion_reason ?? '', 'exclusion_reason', 0);
-  const domainId = validateSafeInteger(data.domain_id ?? 0, 'domain_id', 0, 6);
-  const domainLabel = validateString(data.domain_label ?? '', 'domain_label', 0);
-  const relevanceScore = validateSafeInteger(data.innovation_score ?? 0, 'innovation_score', 0, 100);
+  const domainId = validateSafeInteger(data.domain_id ?? data.cluster_id ?? 0, 'domain_id', 0, 6);
+  const domainLabel = validateString(data.domain_label ?? data.cluster_label ?? '', 'domain_label', 0);
+  const relevanceScore = validateSafeInteger(data.innovation_score ?? data.relevance_score ?? 0, 'innovation_score', 0, 100);
   const isDuplicate = validateBoolean(data.is_duplicate ?? false, 'is_duplicate');
   const duplicateOfId = validateString(data.duplicate_of_id ?? '', 'duplicate_of_id', 0, 128);
   const selected = validateBoolean(data.selected ?? false, 'selected');
@@ -389,6 +389,7 @@ export function decodeComment(data: unknown): ProposalRecord {
     domain_id: domainId,
     cluster_id: domainId,
     domain_label: domainLabel,
+    cluster_label: domainLabel,
     innovation_score: relevanceScore,
     relevance_score: relevanceScore,
     is_duplicate: isDuplicate,
@@ -405,14 +406,15 @@ export function decodeCluster(data: unknown): DomainRecord {
     throw new Error('Malformed domain record: expected JSON object');
   }
 
-  const domainId = validateSafeInteger(data.domain_id, 'domain_id', 1, 6);
+  const domainId = validateSafeInteger(data.domain_id ?? data.cluster_id, 'domain_id', 1, 6);
   const label = validateString(data.label, 'label', 1);
   const summary = validateString(data.summary ?? '', 'summary', 0);
 
-  if (!Array.isArray(data.proposal_ids)) {
+  const rawIds = data.proposal_ids ?? data.comment_ids;
+  if (!Array.isArray(rawIds)) {
     throw new Error('Malformed domain record: proposal_ids must be an array');
   }
-  const proposalIds = data.proposal_ids.map((id, i) => validateString(id, `proposal_ids[${i}]`, 1, 128));
+  const proposalIds = rawIds.map((id, i) => validateString(id, `proposal_ids[${i}]`, 1, 128));
 
   return {
     domain_id: domainId,
@@ -495,4 +497,7 @@ export type CommentRecord = ProposalRecord;
 export type ClusterRecord = DomainRecord;
 export type ChallengeRecord = DisputeRecord;
 export const decodeHearing = decodeProgram;
+export const decodeProposal = decodeComment;
+export const decodeDomain = decodeCluster;
+export const decodeDispute = decodeChallenge;
 

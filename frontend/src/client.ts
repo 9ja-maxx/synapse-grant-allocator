@@ -15,6 +15,9 @@ import {
   TransactionHash,
   TransactionPhase,
   ProgramSummary,
+  ProposalRecord,
+  DomainRecord,
+  DisputeRecord,
   CommentRecord,
   ClusterRecord,
   ChallengeRecord,
@@ -84,26 +87,34 @@ export class GenLayerContractClient {
   /**
    * 3. Get registered proposal count for a program.
    */
-  public async getCommentCount(programId: number): Promise<number> {
+  public async getProposalCount(programId: number): Promise<number> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const raw = await this.readContract('get_proposal_count', [validId]);
     return validateSafeInteger(raw, 'proposal_count', 0, 12);
   }
 
+  public async getCommentCount(programId: number): Promise<number> {
+    return this.getProposalCount(programId);
+  }
+
   /**
    * 4. Get a proposal by its registration index.
    */
-  public async getCommentByIndex(programId: number, index: number): Promise<CommentRecord> {
+  public async getProposalByIndex(programId: number, index: number): Promise<ProposalRecord> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const validIdx = validateSafeInteger(index, 'proposal_index', 0, 11);
     const raw = await this.readContract('get_proposal_by_index', [validId, validIdx]);
     return decodeComment(this.parseJsonResult(raw, 'get_proposal_by_index'));
   }
 
+  public async getCommentByIndex(programId: number, index: number): Promise<CommentRecord> {
+    return this.getProposalByIndex(programId, index);
+  }
+
   /**
    * 5. Get a proposal by its external ID.
    */
-  public async getCommentById(programId: number, externalId: string): Promise<CommentRecord> {
+  public async getProposalById(programId: number, externalId: string): Promise<ProposalRecord> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const cleanExternalId = String(externalId || '').trim();
     if (!cleanExternalId) {
@@ -113,10 +124,14 @@ export class GenLayerContractClient {
     return decodeComment(this.parseJsonResult(raw, 'get_proposal_by_id'));
   }
 
+  public async getCommentById(programId: number, externalId: string): Promise<CommentRecord> {
+    return this.getProposalById(programId, externalId);
+  }
+
   /**
    * 6. Get all registered proposals for a program.
    */
-  public async getAllComments(programId: number): Promise<CommentRecord[]> {
+  public async getAllProposals(programId: number): Promise<ProposalRecord[]> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const raw = this.parseJsonResult(await this.readContract('get_all_proposals', [validId]), 'get_all_proposals');
     if (!Array.isArray(raw)) {
@@ -125,10 +140,14 @@ export class GenLayerContractClient {
     return raw.map(decodeComment);
   }
 
+  public async getAllComments(programId: number): Promise<CommentRecord[]> {
+    return this.getAllProposals(programId);
+  }
+
   /**
-   * 7. Get all domains for a program.
+   * 7. Get all research domains for a program.
    */
-  public async getClusters(programId: number): Promise<ClusterRecord[]> {
+  public async getResearchDomains(programId: number): Promise<DomainRecord[]> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const raw = this.parseJsonResult(await this.readContract('get_research_domains', [validId]), 'get_research_domains');
     if (!Array.isArray(raw)) {
@@ -137,10 +156,14 @@ export class GenLayerContractClient {
     return raw.map(decodeCluster);
   }
 
+  public async getClusters(programId: number): Promise<ClusterRecord[]> {
+    return this.getResearchDomains(programId);
+  }
+
   /**
    * 8. Get allocation ledger (winning proposals in rank order).
    */
-  public async getAllocationLedger(programId: number): Promise<CommentRecord[]> {
+  public async getGrantAllocationRoster(programId: number): Promise<ProposalRecord[]> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const raw = this.parseJsonResult(await this.readContract('get_grant_allocation_roster', [validId]), 'get_grant_allocation_roster');
     if (!Array.isArray(raw)) {
@@ -149,26 +172,38 @@ export class GenLayerContractClient {
     return raw.map(decodeComment);
   }
 
+  public async getAllocationLedger(programId: number): Promise<CommentRecord[]> {
+    return this.getGrantAllocationRoster(programId);
+  }
+
   /**
    * 9. Get a dispute record by dispute ID.
    */
-  public async getChallenge(programId: number, disputeId: number): Promise<ChallengeRecord> {
+  public async getDispute(programId: number, disputeId: number): Promise<DisputeRecord> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const validChId = validateSafeInteger(disputeId, 'dispute_id', 1);
     const raw = await this.readContract('get_dispute', [validId, validChId]);
     return decodeChallenge(this.parseJsonResult(raw, 'get_dispute'));
   }
 
+  public async getChallenge(programId: number, disputeId: number): Promise<ChallengeRecord> {
+    return this.getDispute(programId, disputeId);
+  }
+
   /**
    * 10. Get all disputes for a program.
    */
-  public async getAllChallenges(programId: number): Promise<ChallengeRecord[]> {
+  public async getAllDisputes(programId: number): Promise<DisputeRecord[]> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const raw = this.parseJsonResult(await this.readContract('get_all_disputes', [validId]), 'get_all_disputes');
     if (!Array.isArray(raw)) {
       throw new Error(`Expected JSON array for get_all_disputes, got ${typeof raw}`);
     }
     return raw.map(decodeChallenge);
+  }
+
+  public async getAllChallenges(programId: number): Promise<ChallengeRecord[]> {
+    return this.getAllDisputes(programId);
   }
 
   /**
@@ -201,14 +236,14 @@ export class GenLayerContractClient {
     proposalUrl: string,
     proposalDigest: string,
     expectedManifestDigest: string,
-    slotCount: number,
-    registrationDeadline: number,
+    grantCount: number,
+    submissionDeadline: number,
     disputeDeadline: number,
     options: WriteCallOptions,
-  ): Promise<{ programId: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
-    const validSlotCount = validateSafeInteger(slotCount, 'slot_count', 1, 6);
-    const validRegDeadline = validateSafeInteger(registrationDeadline, 'registration_deadline', 0);
-    const validChalDeadline = validateSafeInteger(disputeDeadline, 'dispute_deadline', 0);
+  ): Promise<{ program_id: number; programId: number; hearingId?: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    const validGrantCount = validateSafeInteger(grantCount, 'grant_count', 1, 6);
+    const validSubDeadline = validateSafeInteger(submissionDeadline, 'submission_deadline', 0);
+    const validDispDeadline = validateSafeInteger(disputeDeadline, 'dispute_deadline', 0);
 
     const receipt = await this.executeWrite(
       'create_program',
@@ -216,9 +251,9 @@ export class GenLayerContractClient {
         proposalUrl.trim(),
         proposalDigest.trim().toLowerCase(),
         expectedManifestDigest.trim().toLowerCase(),
-        validSlotCount,
-        validRegDeadline,
-        validChalDeadline,
+        validGrantCount,
+        validSubDeadline,
+        validDispDeadline,
       ],
       options,
     );
@@ -234,15 +269,27 @@ export class GenLayerContractClient {
     }
 
     if (returnedProgramId === null) {
-      // Fail reconciliation safely: transaction finalized, but explicit docket refresh is needed
+      try {
+        const count = await this.getProgramCount();
+        if (count > 0) {
+          returnedProgramId = count;
+        }
+      } catch {
+        returnedProgramId = null;
+      }
+    }
+
+    if (returnedProgramId === null) {
       throw new ProgramCreatedReconciliationError(
-        'Program created and finalized on-chain, but the returned docket ID could not be parsed automatically. Please refresh dockets to view your program.',
+        'Program created and finalized on-chain, but the returned program ID could not be parsed automatically. Please refresh programs.',
         receipt.hash,
       );
     }
 
     return {
+      program_id: returnedProgramId,
       programId: returnedProgramId,
+      hearingId: returnedProgramId,
       txHash: receipt.hash,
       receipt,
     };
@@ -251,17 +298,17 @@ export class GenLayerContractClient {
   /**
    * 2. Register a proposal into a program.
    */
-  public async registerComment(
+  public async submitProposal(
     programId: number,
-    externalId: string,
+    proposalId: string,
     url: string,
     digest: string,
     options: WriteCallOptions,
-  ): Promise<{ proposalIndex: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
+  ): Promise<{ proposalIndex: number; commentIndex: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const receipt = await this.executeWrite(
       'submit_proposal',
-      [validId, externalId.trim(), url.trim(), digest.trim().toLowerCase()],
+      [validId, proposalId.trim(), url.trim(), digest.trim().toLowerCase()],
       options,
     );
 
@@ -276,15 +323,36 @@ export class GenLayerContractClient {
 
     return {
       proposalIndex,
+      commentIndex: proposalIndex,
       txHash: receipt.hash,
       receipt,
     };
   }
 
+  public async registerComment(
+    programId: number,
+    externalId: string,
+    url: string,
+    digest: string,
+    options: WriteCallOptions,
+  ): Promise<{ proposalIndex: number; commentIndex: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.submitProposal(programId, externalId, url, digest, options);
+  }
+
+  public async registerProposal(
+    programId: number,
+    proposalId: string,
+    url: string,
+    digest: string,
+    options: WriteCallOptions,
+  ): Promise<{ proposalIndex: number; commentIndex: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.submitProposal(programId, proposalId, url, digest, options);
+  }
+
   /**
-   * 3. Lock proposal batch and verify manifest hash (organizer only).
+   * 3. Lock proposal batch and verify manifest hash (director only).
    */
-  public async lockBatch(
+  public async commitDocket(
     programId: number,
     options: WriteCallOptions,
   ): Promise<{ computedManifestDigest: string; txHash: TransactionHash; receipt: VerifiedReceipt }> {
@@ -301,6 +369,13 @@ export class GenLayerContractClient {
     };
   }
 
+  public async lockBatch(
+    programId: number,
+    options: WriteCallOptions,
+  ): Promise<{ computedManifestDigest: string; txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.commitDocket(programId, options);
+  }
+
   /** Cancel a collecting program when its authenticated admission batch cannot be safely locked. */
   public async cancelProgram(
     programId: number,
@@ -314,7 +389,7 @@ export class GenLayerContractClient {
   /**
    * 4. Derive thematic domains via consensus (permissionless in LOCKED).
    */
-  public async domainComments(
+  public async thematizeProposals(
     programId: number,
     options: WriteCallOptions,
   ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
@@ -326,10 +401,17 @@ export class GenLayerContractClient {
     };
   }
 
+  public async domainComments(
+    programId: number,
+    options: WriteCallOptions,
+  ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.thematizeProposals(programId, options);
+  }
+
   /**
-   * 5. Allocate program speaking slots (permissionless in CLUSTERED).
+   * 5. Allocate program grant slots (permissionless in CLUSTERED).
    */
-  public async allocateSlots(
+  public async allocateGrants(
     programId: number,
     options: WriteCallOptions,
   ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
@@ -341,15 +423,22 @@ export class GenLayerContractClient {
     };
   }
 
+  public async allocateSlots(
+    programId: number,
+    options: WriteCallOptions,
+  ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.allocateGrants(programId, options);
+  }
+
   /**
-   * 6. Open a dispute dispute in CHALLENGE state.
+   * 6. Open a dispute in CHALLENGE state.
    */
-  public async openChallenge(
+  public async fileDispute(
     programId: number,
     disputeType: ChallengeType,
     targetIds: string[],
     options: WriteCallOptions,
-  ): Promise<{ disputeId: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
+  ): Promise<{ disputeId: number; challengeId: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
     const validId = validateSafeInteger(programId, 'program_id', 1);
     const cleanTargets = targetIds.map((t) => t.trim());
     const receipt = await this.executeWrite(
@@ -369,15 +458,25 @@ export class GenLayerContractClient {
 
     return {
       disputeId,
+      challengeId: disputeId,
       txHash: receipt.hash,
       receipt,
     };
   }
 
+  public async openChallenge(
+    programId: number,
+    disputeType: ChallengeType,
+    targetIds: string[],
+    options: WriteCallOptions,
+  ): Promise<{ disputeId: number; challengeId: number; txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.fileDispute(programId, disputeType, targetIds, options);
+  }
+
   /**
-   * 7. Resolve a dispute dispute via consensus.
+   * 7. Resolve a dispute via consensus.
    */
-  public async resolveChallenge(
+  public async adjudicateDispute(
     programId: number,
     disputeId: number,
     options: WriteCallOptions,
@@ -393,6 +492,14 @@ export class GenLayerContractClient {
       txHash: receipt.hash,
       receipt,
     };
+  }
+
+  public async resolveChallenge(
+    programId: number,
+    disputeId: number,
+    options: WriteCallOptions,
+  ): Promise<{ txHash: TransactionHash; receipt: VerifiedReceipt }> {
+    return this.adjudicateDispute(programId, disputeId, options);
   }
 
   /**

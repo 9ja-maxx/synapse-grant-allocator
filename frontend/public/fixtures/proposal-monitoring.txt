@@ -1,0 +1,3 @@
+SYN-MONITOR-02: Decentralized EEG Signal Integrity Filter
+
+Peer-to-peer verifiable artifact verification and real-time noise reduction pipeline for distributed brain-computer interfaces.

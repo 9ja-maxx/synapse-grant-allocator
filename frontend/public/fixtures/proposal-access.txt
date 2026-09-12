@@ -1,0 +1,3 @@
+SYN-ACCESS-01: OpenBCI Accessibility Suite
+
+Comprehensive open-source drivers, calibration tooling, and cross-platform accessibility middleware for low-cost EEG headsets.
